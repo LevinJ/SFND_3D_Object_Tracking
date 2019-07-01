@@ -20,6 +20,11 @@ void gaussianSmoothing1()
                             1, 4, 7, 4, 1};
     cv::Mat kernel = cv::Mat(5, 5, CV_32F, gauss_data);
 
+    for (int i = 0; i < 25; i++)
+	{
+		gauss_data[i] /= 273;
+	}
+
     // apply filter
     cv::Mat result;
     cv::filter2D(img, result, -1, kernel, cv::Point(-1, -1), 0, cv::BORDER_DEFAULT);
