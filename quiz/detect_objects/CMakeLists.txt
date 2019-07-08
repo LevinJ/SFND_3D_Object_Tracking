@@ -13,6 +13,6 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
 add_definitions(${OpenCV_DEFINITIONS})
 
-# Executables for exercise
-add_executable (cornerness_harris src/cornerness_harris.cpp)
-target_link_libraries (cornerness_harris ${OpenCV_LIBRARIES})
+# Executables for exercises
+add_executable (detect_objects src/detect_objects_2.cpp)
+target_link_libraries (detect_objects ${OpenCV_LIBRARIES})
