@@ -97,6 +97,8 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
 
         double shrinkFactor = 0.10;
         vector<vector<BoundingBox>::iterator> enclosingBoxes; // pointers to all bounding boxes which enclose the current Lidar point
+        int eclosed_num = 0;//the number of times  that lidar point is in a bounding box
+        vector<BoundingBox>::iterator enclosed_ptr;
         for (vector<BoundingBox>::iterator it2 = boundingBoxes.begin(); it2 != boundingBoxes.end(); ++it2)
         {
             // shrink current bounding box slightly to avoid having too many outlier points around the edges
@@ -109,13 +111,20 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
             // check wether point is within current bounding box
             if (smallerBox.contains(pt))
             {
-                it2->lidarPoints.push_back(*it1);
-                lidarPoints.erase(it1);
-                it1--;
-                break;
+            	enclosed_ptr = it2;
+            	eclosed_num ++;
+            }
+            if(eclosed_num >=2){
+            	//the lidar points is already in two bounding box, we can skip it for sure
+            	break;
             }
         } // eof loop over all bounding boxes
-
+        if(eclosed_num == 1){
+        	//add the lidar to the bounding box it belongs to
+        	enclosed_ptr->lidarPoints.push_back(*it1);
+			lidarPoints.erase(it1);
+			it1--;
+        }
     } // eof loop over all Lidar points
 }
 
