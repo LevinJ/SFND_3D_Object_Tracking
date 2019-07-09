@@ -151,7 +151,21 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
 {
-    // ...
+	double dT = 1/frameRate;        // time between two measurements in seconds
+	// find closest distance to Lidar points within ego lane
+	double minXPrev = 1e9, minXCurr = 1e9;
+	for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
+	{
+
+		minXPrev = minXPrev > it->x ? it->x : minXPrev;
+	}
+
+	for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
+	{
+		minXCurr = minXCurr > it->x ? it->x : minXCurr;
+	}
+	// compute TTC from both measurements
+	TTC = minXCurr * dT / (minXPrev - minXCurr);
 }
 
 static bool find_containing_box(std::vector<BoundingBox>  & boxes, cv::Point2f &pt, int &boxid){
@@ -177,8 +191,21 @@ void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, D
 	cv::Mat curr_img = currFrame.cameraImg.clone();
 
 	for(auto &match : bbBestMatches){
-		auto prev_rect = prevFrame.boundingBoxes[match.first].roi;
-		auto curr_rect = currFrame.boundingBoxes[match.second].roi;
+//		auto prev_rect = prevFrame.boundingBoxes[match.first].roi;
+//		auto curr_rect = currFrame.boundingBoxes[match.second].roi;
+
+		cv::Rect prev_rect;
+		cv::Rect curr_rect;
+		for(auto &box:prevFrame.boundingBoxes ){
+			if(box.boxID == match.first){
+				prev_rect = box.roi;
+			}
+		}
+		for(auto &box: currFrame.boundingBoxes){
+			if(box.boxID == match.second){
+				curr_rect = box.roi;
+			}
+		}
 		cv::RNG rng(prevFrame.boundingBoxes[match.first].boxID);
 		cv::Scalar currColor = cv::Scalar(rng.uniform(0,150), rng.uniform(0, 150), rng.uniform(0, 150));
 		cv::rectangle(prev_img, prev_rect, currColor, 2);
@@ -220,7 +247,7 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 	for(int i=0; i< ROW; i++){
 		int j = find_max_ind(match_matrix[i]);
 		if(match_matrix[i][j] > 0){
-			bbBestMatches[i] = j;
+			bbBestMatches[prevFrame.boundingBoxes[i].boxID] = currFrame.boundingBoxes[j].boxID;
 		}
 
 	}
