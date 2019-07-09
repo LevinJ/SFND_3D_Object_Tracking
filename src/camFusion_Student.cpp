@@ -154,8 +154,74 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
     // ...
 }
 
+static bool find_containing_box(std::vector<BoundingBox>  & boxes, cv::Point2f &pt, int &boxid){
+	int match_times = 0;
+	for(int i=0; i< boxes.size(); i++){
+		auto &box = boxes[i];
+		if(box.roi.contains(pt)){
+			boxid = i;
+			match_times ++;
+		}
+	}
+	if(match_times != 1){
+		//assign a pt only if it belongs to just one bounding box
+		boxid = -1;
+	}
+	return match_times == 1;
+}
+static int find_max_ind(const vector<int> &vec){
+	return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
+}
+void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame){
+	cv::Mat prev_img = prevFrame.cameraImg.clone();
+	cv::Mat curr_img = currFrame.cameraImg.clone();
 
+	for(auto &match : bbBestMatches){
+		auto prev_rect = prevFrame.boundingBoxes[match.first].roi;
+		auto curr_rect = currFrame.boundingBoxes[match.second].roi;
+		cv::RNG rng(prevFrame.boundingBoxes[match.first].boxID);
+		cv::Scalar currColor = cv::Scalar(rng.uniform(0,150), rng.uniform(0, 150), rng.uniform(0, 150));
+		cv::rectangle(prev_img, prev_rect, currColor, 2);
+		cv::rectangle(curr_img, curr_rect, currColor, 2);
+	}
+
+	cv::Mat visImg;
+	cv::vconcat(curr_img, prev_img, visImg);
+	// display image
+	string windowName = "boundign box matching";
+	cv::namedWindow(windowName, 1);
+	cv::imshow(windowName, visImg);
+	cv::waitKey(0); // wait for key to be pressed
+
+}
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
     // ...
+	vector<vector<int>> match_matrix;
+	const int ROW = prevFrame.boundingBoxes.size();
+	const int COL = currFrame.boundingBoxes.size();
+//	int match_matrix[ROW][COL];
+	 for(int i=0; i<ROW; i++){
+		 vector<int> row_vec(COL,0);
+		 match_matrix.push_back(row_vec);
+	 }
+
+	for(auto &m:matches){
+		int src_boxid = -1;
+		//check which box the src_pt belongs to
+		if(!find_containing_box(prevFrame.boundingBoxes, prevFrame.keypoints[m.queryIdx].pt, src_boxid)) continue;
+		//check which box the ref_pt belongs to
+		int ref_boxid = -1;
+		if(!find_containing_box(currFrame.boundingBoxes, currFrame.keypoints[m.trainIdx].pt, ref_boxid)) continue;
+		//match has been found right in the two bounding box, fill in the match matrix
+		match_matrix[src_boxid][ref_boxid]++;
+	}
+
+	for(int i=0; i< ROW; i++){
+		int j = find_max_ind(match_matrix[i]);
+		if(match_matrix[i][j] > 0){
+			bbBestMatches[i] = j;
+		}
+
+	}
 }
