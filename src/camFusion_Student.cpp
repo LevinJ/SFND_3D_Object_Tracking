@@ -75,6 +75,10 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
         // plot Lidar points into top view image
         int top=1e8, left=1e8, bottom=0.0, right=0.0; 
         float xwmin=1e8, ywmin=1e8, ywmax=-1e8;
+        if(it1->lidarPoints.size() < 3){
+        	//skip the bounding box display if it contains less than three points.
+        	continue;
+        }
         for (auto it2 = it1->lidarPoints.begin(); it2 != it1->lidarPoints.end(); ++it2)
         {
             // world coordinates
@@ -97,7 +101,6 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
             // draw individual point
             cv::circle(topviewImg, cv::Point(x, y), 4, currColor, -1);
         }
-
         // draw enclosing rectangle
         cv::rectangle(topviewImg, cv::Point(left, top), cv::Point(right, bottom),cv::Scalar(0,0,0), 2);
 
