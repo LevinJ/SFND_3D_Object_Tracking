@@ -29,6 +29,7 @@ struct DebugFlag{
 	bool keyppoint_match;
 	bool lidarpts_topview;
 	bool ttc_result;
+	bool original_lidarpnts;
 };
 
 
@@ -42,8 +43,9 @@ int main(int argc, const char *argv[])
 	debug_flag.object_detection = false;
 	debug_flag.box_match = false;
 	debug_flag.keyppoint_match = false;
-	debug_flag.lidarpts_topview = true;
+	debug_flag.lidarpts_topview = false;
 	debug_flag.ttc_result = false;
+	debug_flag.original_lidarpnts = false;
     /* INIT VARIABLES AND DATA STRUCTURES */
 
     // data location
@@ -139,7 +141,12 @@ int main(int argc, const char *argv[])
         // remove Lidar points based on distance properties
         float minZ = -1.5, maxZ = -0.9, minX = 2.0, maxX = 20.0, maxY = 2.0, minR = 0.1; // focus on ego lane
         cropLidarPoints(lidarPoints, minX, maxX, maxY, minZ, maxZ, minR);
-        show_lidar_cloud(lidarPoints);
+        bVis = debug_flag.original_lidarpnts;
+        if(bVis){
+        	show_lidar_cloud(lidarPoints);
+        }
+
+        bVis = false;
     
         (dataBuffer.end() - 1)->lidarPoints = lidarPoints;
 
@@ -154,11 +161,11 @@ int main(int argc, const char *argv[])
 
         // Visualize 3D objects
         bVis = debug_flag.lidarpts_topview ;
-        if(bVis)
-        {
+//        if(bVis)
+//        {
 //            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
-            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 8.0), cv::Size(800, 800), true);
-        }
+           show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 8.0), cv::Size(800, 800), bVis);
+//        }
         bVis = false;
 
         cout << "#4 : CLUSTER LIDAR POINT CLOUD done" << endl;
@@ -309,7 +316,7 @@ int main(int argc, const char *argv[])
                     computeTTCCamera(dataBuffer.tail_prev()->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera);
                     bVis = false;
                     //// EOF STUDENT ASSIGNMENT
-
+                    cout<<"TTC Lidar :"<<ttcLidar<<", TTC Camera : "<<ttcCamera<<endl;
                     bVis = debug_flag.ttc_result;
                     if (bVis)
                     {

@@ -117,6 +117,7 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
         putText(topviewImg, str1, cv::Point2f(left-250, bottom+50), cv::FONT_ITALIC, 2, currColor);
         sprintf(str2, "xmin=%2.2f m, yw=%2.2f m", xwmin, ywmax-ywmin);
         putText(topviewImg, str2, cv::Point2f(left-250, bottom+125), cv::FONT_ITALIC, 2, currColor);  
+        cout<<"xmin="<<xwmin<<",yw="<<ywmax-ywmin<<",id="<<it1->boxID<<",pts="<<it1->lidarPoints.size()<<endl;
     }
 
     // plot distance markers
@@ -131,13 +132,14 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
         cv::line(topviewImg, cv::Point(0, y), cv::Point(imageSize.width, y), cv::Scalar(255, 0, 0));
     }
 
-    // display image
-    string windowName = "3D Objects";
-    cv::namedWindow(windowName, 1);
-    cv::imshow(windowName, topviewImg);
+
 
     if(bWait)
     {
+    	// display image
+		string windowName = "3D Objects";
+		cv::namedWindow(windowName, 1);
+		cv::imshow(windowName, topviewImg);
         cv::waitKey(0); // wait for key to be pressed
     }
 }
@@ -223,16 +225,47 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 	double dT = 1/frameRate;        // time between two measurements in seconds
 	// find closest distance to Lidar points within ego lane
 	double minXPrev = 1e9, minXCurr = 1e9;
+//	for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
+//	{
+//
+//		minXPrev = minXPrev > it->x ? it->x : minXPrev;
+//	}
+//
+//	for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
+//	{
+//		minXCurr = minXCurr > it->x ? it->x : minXCurr;
+//	}
+	vector<double> XPevs;
+	vector<double> XCurrs;
 	for (auto it = lidarPointsPrev.begin(); it != lidarPointsPrev.end(); ++it)
 	{
-
-		minXPrev = minXPrev > it->x ? it->x : minXPrev;
+		XPevs.push_back( it->x);
 	}
 
 	for (auto it = lidarPointsCurr.begin(); it != lidarPointsCurr.end(); ++it)
 	{
-		minXCurr = minXCurr > it->x ? it->x : minXCurr;
+		XCurrs.push_back(it->x );
 	}
+	std::sort(XPevs.begin(), XPevs.end());
+	std::sort(XCurrs.begin(), XCurrs.end());
+
+	//There are invariably some outliers between ego car and the preceding car, so take the nth smallest value
+	const int N = 7;
+	if(XPevs.size()<=N){
+		minXPrev = XPevs[0];
+	}else{
+		minXPrev = XPevs[N];
+	}
+
+	if(XCurrs.size() <= N){
+		minXCurr = XCurrs[0];
+	}else{
+		minXCurr = XCurrs[N];
+	}
+
+	cout<<"Lidar ttc, adjusted minXPrev="<<minXPrev<<",original minXPrev="<<XPevs[0]<<endl;
+	cout<<"Lidar ttc, adjusted minXCurr="<<minXCurr<<",original minXPrev="<<XCurrs[0]<<endl;
+
 	// compute TTC from both measurements
 	TTC = minXCurr * dT / (minXPrev - minXCurr);
 }
