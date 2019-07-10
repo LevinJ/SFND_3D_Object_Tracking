@@ -67,6 +67,9 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
 
 void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, cv::Size imageSize, bool bWait)
 {
+	//to better visual lidar point top view, fix the starting world size as 6
+	const int START_HEIGHT = 6;
+	worldSize.height = worldSize.height - START_HEIGHT;
     // create topview image
     cv::Mat topviewImg(imageSize, CV_8UC3, cv::Scalar(255, 255, 255));
 
@@ -93,7 +96,7 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
             ywmax = ywmax>yw ? ywmax : yw;
 
             // top-view coordinates
-            int y = (-xw * imageSize.height / worldSize.height) + imageSize.height;
+            int y = (-(xw- START_HEIGHT) * imageSize.height / worldSize.height) + imageSize.height;
             int x = (-yw * imageSize.width / worldSize.width) + imageSize.width / 2;
 
             // find enclosing rectangle
@@ -117,8 +120,11 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
     }
 
     // plot distance markers
-    float lineSpacing = 2.0; // gap between distance markers
-    int nMarkers = floor(worldSize.height / lineSpacing);
+//    float lineSpacing = 1.0; // gap between distance markers
+//    int nMarkers = floor(worldSize.height / lineSpacing);
+    int nMarkers = 10;
+    float lineSpacing =  worldSize.height / float(nMarkers);
+
     for (size_t i = 0; i < nMarkers; ++i)
     {
         int y = (-(i * lineSpacing) * imageSize.height / worldSize.height) + imageSize.height;

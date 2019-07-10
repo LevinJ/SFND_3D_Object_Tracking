@@ -23,9 +23,27 @@
 
 using namespace std;
 
+struct DebugFlag{
+	bool object_detection;
+	bool box_match;
+	bool keyppoint_match;
+	bool lidarpts_topview;
+	bool ttc_result;
+};
+
+
+
+
+
 /* MAIN PROGRAM */
 int main(int argc, const char *argv[])
 {
+	DebugFlag debug_flag;
+	debug_flag.object_detection = false;
+	debug_flag.box_match = false;
+	debug_flag.keyppoint_match = false;
+	debug_flag.lidarpts_topview = true;
+	debug_flag.ttc_result = false;
     /* INIT VARIABLES AND DATA STRUCTURES */
 
     // data location
@@ -101,13 +119,13 @@ int main(int argc, const char *argv[])
 
 
         /* DETECT & CLASSIFY OBJECTS */
-        bVis = true;
+        bVis = debug_flag.object_detection;
         float confThreshold = 0.2;
         float nmsThreshold = 0.4;        
         detectObjects((dataBuffer.end() - 1)->cameraImg, (dataBuffer.end() - 1)->boundingBoxes, confThreshold, nmsThreshold,
                       yoloBasePath, yoloClassesFile, yoloModelConfiguration, yoloModelWeights, bVis);
 
-
+        bVis = false;
         cout << "#2 : DETECT & CLASSIFY OBJECTS done" << endl;
 
 
@@ -134,11 +152,11 @@ int main(int argc, const char *argv[])
         clusterLidarWithROI((dataBuffer.end()-1)->boundingBoxes, (dataBuffer.end() - 1)->lidarPoints, shrinkFactor, P_rect_00, R_rect_00, RT);
 
         // Visualize 3D objects
-        bVis = false;
+        bVis = debug_flag.lidarpts_topview ;
         if(bVis)
         {
 //            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
-            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(1000, 1000), true);
+            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 8.0), cv::Size(800, 800), true);
         }
         bVis = false;
 
@@ -231,7 +249,7 @@ int main(int argc, const char *argv[])
             //// TASK FP.1 -> match list of 3D objects (vector<BoundingBox>) between current and previous frame (implement ->matchBoundingBoxes)
             map<int, int> bbBestMatches;
             matchBoundingBoxes(matches, bbBestMatches, *(dataBuffer.tail_prev()), *(dataBuffer.end()-1)); // associate bounding boxes between current and previous frame using keypoint matches
-            bVis = true;
+            bVis = debug_flag.box_match;
 			if(bVis)
 			{
 				show_bd_matching(bbBestMatches, *(dataBuffer.tail_prev()), *(dataBuffer.end()-1));
@@ -273,6 +291,7 @@ int main(int argc, const char *argv[])
                 {
                     //// STUDENT ASSIGNMENT
                     //// TASK FP.2 -> compute time-to-collision based on Lidar data (implement -> computeTTCLidar)
+                	cout<<"current lidar points ="<<currBB->lidarPoints.size()<<", previous lidar points "<<prevBB->lidarPoints.size()<<endl;
                     double ttcLidar; 
                     computeTTCLidar(prevBB->lidarPoints, currBB->lidarPoints, sensorFrameRate, ttcLidar);
                     //// EOF STUDENT ASSIGNMENT
@@ -282,7 +301,7 @@ int main(int argc, const char *argv[])
                     //// TASK FP.4 -> compute time-to-collision based on camera (implement -> computeTTCCamera)
                     double ttcCamera;
                     clusterKptMatchesWithROI(*currBB, dataBuffer.tail_prev()->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);
-                    bVis = true;
+                    bVis = debug_flag.keyppoint_match;
                     if(bVis){
                     	show_kpt_matching(*currBB, *(dataBuffer.tail_prev()), *(dataBuffer.end() - 1));
                     }
@@ -290,7 +309,7 @@ int main(int argc, const char *argv[])
                     bVis = false;
                     //// EOF STUDENT ASSIGNMENT
 
-                    bVis = true;
+                    bVis = debug_flag.ttc_result;
                     if (bVis)
                     {
                         cv::Mat visImg = (dataBuffer.end() - 1)->cameraImg.clone();
