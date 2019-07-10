@@ -2,8 +2,12 @@
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <utility>
+#include <opencv2/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/features2d.hpp>
+#include <opencv2/xfeatures2d.hpp>
 
 #include "camFusion.hpp"
 #include "dataStructures.h"
@@ -136,9 +140,16 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
 // associate a given bounding box with the keypoints it contains
 void clusterKptMatchesWithROI(BoundingBox &boundingBox, std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr, std::vector<cv::DMatch> &kptMatches)
 {
+	float shrinkFactor = 0.10; // shrinks each bounding box by the given percentage to avoid 3D object merging at the edges of an ROI
     for(auto &m: kptMatches){
     	auto &pt = kptsCurr[m.trainIdx].pt;
-    	if(boundingBox.roi.contains(pt)){
+    	// shrink current bounding box slightly to avoid having too many outlier points around the edges
+		cv::Rect smallerBox;
+		smallerBox.x = boundingBox.roi.x + shrinkFactor * boundingBox.roi.width / 2.0;
+		smallerBox.y = boundingBox.roi.y + shrinkFactor * boundingBox.roi.height / 2.0;
+		smallerBox.width = boundingBox.roi.width * (1 - shrinkFactor);
+		smallerBox.height = boundingBox.roi.height * (1 - shrinkFactor);
+    	if(smallerBox.contains(pt)){
     		boundingBox.keypoints.push_back(kptsCurr[m.trainIdx]);
     		boundingBox.kptMatches.push_back(m);
     	}
@@ -238,14 +249,28 @@ static bool find_containing_box(std::vector<BoundingBox>  & boxes, cv::Point2f &
 static int find_max_ind(const vector<int> &vec){
 	return std::distance(vec.begin(), std::max_element(vec.begin(), vec.end()));
 }
+
+void show_kpt_matching(BoundingBox &boundingBox, DataFrame &prevFrame, DataFrame &currFrame){
+	// visualize results
+	cv::Mat matchImg;
+	cv::drawMatches(prevFrame.cameraImg, prevFrame.keypoints, currFrame.cameraImg, currFrame.keypoints, boundingBox.kptMatches,
+					matchImg, cv::Scalar::all(-1), cv::Scalar::all(-1), vector<char>(), cv::DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	cv::resize(matchImg, matchImg, cv::Size(0,0), 0.7,0.7);
+
+	string windowName = "Matching keypoints between two camera images";
+	cv::namedWindow(windowName, 7);
+	cv::imshow(windowName, matchImg);
+	cv::waitKey(0);
+}
+
 void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame){
 	cv::Mat prev_img = prevFrame.cameraImg.clone();
 	cv::Mat curr_img = currFrame.cameraImg.clone();
+	std::vector<std::pair<cv::Rect, cv::Rect>> res_vec;
+
+
 
 	for(auto &match : bbBestMatches){
-//		auto prev_rect = prevFrame.boundingBoxes[match.first].roi;
-//		auto curr_rect = currFrame.boundingBoxes[match.second].roi;
-
 		cv::Rect prev_rect;
 		cv::Rect curr_rect;
 		for(auto &box:prevFrame.boundingBoxes ){
@@ -258,14 +283,36 @@ void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, D
 				curr_rect = box.roi;
 			}
 		}
-		cv::RNG rng(prevFrame.boundingBoxes[match.first].boxID);
-		cv::Scalar currColor = cv::Scalar(rng.uniform(0,150), rng.uniform(0, 150), rng.uniform(0, 150));
-		cv::rectangle(prev_img, prev_rect, currColor, 2);
-		cv::rectangle(curr_img, curr_rect, currColor, 2);
+
+		prev_rect.y += curr_img.rows;
+		res_vec.push_back(std::make_pair(curr_rect, prev_rect));
+
 	}
+
+
 
 	cv::Mat visImg;
 	cv::vconcat(curr_img, prev_img, visImg);
+
+	//draw the bounding box and connection line
+	int i = 0;
+	for(auto &m: res_vec){
+		auto &curr_rect = m.first;
+		auto &prev_rect =  m.second;
+
+		cv::RNG rng(i++);
+		cv::Scalar currColor = cv::Scalar(rng.uniform(0,150), rng.uniform(0, 150), rng.uniform(0, 150));
+		cv::rectangle(visImg, prev_rect, currColor, 2);
+		cv::rectangle(visImg, curr_rect, currColor, 2);
+
+		cv::Point pt1(curr_rect.x + curr_rect.width/2, curr_rect.y + curr_rect.height/2);
+		cv::Point pt2(prev_rect.x + prev_rect.width/2, prev_rect.y + prev_rect.height/2);
+		cv::line(visImg, pt1, pt2, currColor, 3);
+	}
+	cout<<"prev frame "<<prevFrame.img_file<<" = "<<prevFrame.boundingBoxes.size()<<endl;
+	cout<<"curr frame "<<currFrame.img_file<<" = "<<currFrame.boundingBoxes.size()<<endl;
+	cout<< "There are "<<res_vec.size()<<" matched box pair"<<endl;
+
 	// display image
 	string windowName = "boundign box matching";
 	cv::namedWindow(windowName, 1);
@@ -273,6 +320,8 @@ void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, D
 	cv::waitKey(0); // wait for key to be pressed
 
 }
+
+
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
     // ...

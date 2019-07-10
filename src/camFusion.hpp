@@ -19,4 +19,5 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC);
 void show_bd_matching(std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame);
+void show_kpt_matching(BoundingBox &boundingBox, DataFrame &prevFrame, DataFrame &currFrame);
 #endif /* camFusion_hpp */

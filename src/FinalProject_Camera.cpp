@@ -86,6 +86,7 @@ int main(int argc, const char *argv[])
         ostringstream imgNumber;
         imgNumber << setfill('0') << setw(imgFillWidth) << imgStartIndex + imgIndex;
         string imgFullFilename = imgBasePath + imgPrefix + imgNumber.str() + imgFileType;
+        cout<<"********  process image "<<imgFullFilename<<endl;
 
         // load image from file 
         cv::Mat img = cv::imread(imgFullFilename);
@@ -93,17 +94,19 @@ int main(int argc, const char *argv[])
         // push image into data frame buffer
         DataFrame frame;
         frame.cameraImg = img;
+        frame.img_file = imgNumber.str();
         dataBuffer.push_back(frame);
 
         cout << "#1 : LOAD IMAGE INTO BUFFER done" << endl;
 
 
         /* DETECT & CLASSIFY OBJECTS */
-        bVis = false;
+        bVis = true;
         float confThreshold = 0.2;
         float nmsThreshold = 0.4;        
         detectObjects((dataBuffer.end() - 1)->cameraImg, (dataBuffer.end() - 1)->boundingBoxes, confThreshold, nmsThreshold,
                       yoloBasePath, yoloClassesFile, yoloModelConfiguration, yoloModelWeights, bVis);
+
 
         cout << "#2 : DETECT & CLASSIFY OBJECTS done" << endl;
 
@@ -279,7 +282,12 @@ int main(int argc, const char *argv[])
                     //// TASK FP.4 -> compute time-to-collision based on camera (implement -> computeTTCCamera)
                     double ttcCamera;
                     clusterKptMatchesWithROI(*currBB, dataBuffer.tail_prev()->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);
+                    bVis = true;
+                    if(bVis){
+                    	show_kpt_matching(*currBB, *(dataBuffer.tail_prev()), *(dataBuffer.end() - 1));
+                    }
                     computeTTCCamera(dataBuffer.tail_prev()->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera);
+                    bVis = false;
                     //// EOF STUDENT ASSIGNMENT
 
                     bVis = true;
@@ -294,7 +302,7 @@ int main(int argc, const char *argv[])
                         putText(visImg, str, cv::Point2f(80, 50), cv::FONT_HERSHEY_PLAIN, 2, cv::Scalar(0,0,255));
 
                         string windowName = "Final Results : TTC";
-                        cv::namedWindow(windowName, 4);
+                        cv::namedWindow(windowName, 1);
                         cv::imshow(windowName, visImg);
                         cout << "Press key to continue to next frame" << endl;
                         cv::waitKey(0);
