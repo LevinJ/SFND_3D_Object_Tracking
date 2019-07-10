@@ -4,6 +4,17 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include "lidarData.hpp"
+#include "render/render.h"
+
+#include <pcl/io/pcd_io.h>
+#include <pcl/common/common.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/crop_box.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/common/transforms.h>
 
 
 using namespace std;
@@ -145,4 +156,58 @@ void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv:
     {
         extVisImg = &visImg;
     }
+}
+//setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
+static void initCamera(CameraAngle setAngle, pcl::visualization::PCLVisualizer::Ptr& viewer)
+{
+
+    viewer->setBackgroundColor (0, 0, 0);
+
+    // set camera position and angle
+    viewer->initCameraParameters();
+    // distance away in meters
+    int distance = 16;
+
+    switch(setAngle)
+    {
+        case XY : viewer->setCameraPosition(-distance, -distance, distance, 1, 1, 0); break;
+        case TopDown : viewer->setCameraPosition(0, 0, distance, 1, 0, 1); break;
+        case Side : viewer->setCameraPosition(0, -distance, 0, 0, 0, 1); break;
+        case FPS : viewer->setCameraPosition(-10, 0, 0, 0, 0, 1);
+    }
+
+    if(setAngle!=FPS)
+        viewer->addCoordinateSystem (1.0);
+}
+void show_lidar_cloud(const std::vector<LidarPoint> &lidarPoints){
+
+
+	pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
+	CameraAngle setAngle = TopDown;
+	initCamera(setAngle, viewer);
+
+	pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+	for(auto &pnt: lidarPoints){
+		pcl::PointXYZI cp;
+		cp.x = pnt.x;
+		cp.y = pnt.y;
+		cp.z = pnt.z;
+		cp.intensity = pnt.r;
+
+		cloud->points.push_back(cp);
+	}
+	cloud->width = cloud->points.size ();
+	cloud->height = 1;
+	cloud->is_dense = true;
+	std::string name = "Lidar cloud point";
+	Color color(0,1,0);
+
+	renderPointCloud( viewer, cloud,  name, color);
+	while (!viewer->wasStopped ())
+	{
+		// Clear viewer
+//		viewer->removeAllPointClouds();
+//		viewer->removeAllShapes();
+		viewer->spinOnce ();
+	}
 }

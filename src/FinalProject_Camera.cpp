@@ -139,6 +139,7 @@ int main(int argc, const char *argv[])
         // remove Lidar points based on distance properties
         float minZ = -1.5, maxZ = -0.9, minX = 2.0, maxX = 20.0, maxY = 2.0, minR = 0.1; // focus on ego lane
         cropLidarPoints(lidarPoints, minX, maxX, maxY, minZ, maxZ, minR);
+        show_lidar_cloud(lidarPoints);
     
         (dataBuffer.end() - 1)->lidarPoints = lidarPoints;
 
