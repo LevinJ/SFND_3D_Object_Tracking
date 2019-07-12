@@ -65,10 +65,10 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
 }
 
 
-void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, cv::Size imageSize, bool bWait)
+void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size2f worldSize, cv::Size imageSize, bool bWait)
 {
 	//to better visual lidar point top view, fix the starting world size as 6
-	const int START_HEIGHT = 6;
+	const float START_HEIGHT = 6.8;
 	worldSize.height = worldSize.height - START_HEIGHT;
     // create topview image
     cv::Mat topviewImg(imageSize, CV_8UC3, cv::Scalar(255, 255, 255));
@@ -113,10 +113,10 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
 
         // augment object with some key data
         char str1[200], str2[200];
-        sprintf(str1, "id=%d, #pts=%d", it1->boxID, (int)it1->lidarPoints.size());
-        putText(topviewImg, str1, cv::Point2f(left-250, bottom+50), cv::FONT_ITALIC, 2, currColor);
+        sprintf(str1, "track id=%d, #pts=%d", it1->trackID, (int)it1->lidarPoints.size());
+        putText(topviewImg, str1, cv::Point2f(left-250, bottom+50), cv::FONT_ITALIC, 1, currColor);
         sprintf(str2, "xmin=%2.2f m, yw=%2.2f m", xwmin, ywmax-ywmin);
-        putText(topviewImg, str2, cv::Point2f(left-250, bottom+125), cv::FONT_ITALIC, 2, currColor);  
+        putText(topviewImg, str2, cv::Point2f(left-250, bottom+125), cv::FONT_ITALIC, 1, currColor);
         cout<<"xmin="<<xwmin<<",yw="<<ywmax-ywmin<<",id="<<it1->boxID<<",pts="<<it1->lidarPoints.size()<<endl;
     }
 
@@ -264,7 +264,7 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 	}
 
 	cout<<"Lidar ttc, adjusted minXPrev="<<minXPrev<<",original minXPrev="<<XPevs[0]<<endl;
-	cout<<"Lidar ttc, adjusted minXCurr="<<minXCurr<<",original minXPrev="<<XCurrs[0]<<endl;
+	cout<<"Lidar ttc, adjusted minXCurr="<<minXCurr<<",original minXCurr="<<XCurrs[0]<<",gap="<<minXCurr- XCurrs[0]<<endl;
 
 	// compute TTC from both measurements
 	TTC = minXCurr * dT / (minXPrev - minXCurr);
@@ -388,6 +388,12 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 		int j = find_max_ind(match_matrix[i]);
 		if(match_matrix[i][j] > 0){
 			bbBestMatches[prevFrame.boundingBoxes[i].boxID] = currFrame.boundingBoxes[j].boxID;
+			//here to simplify things, we set all track id as above 1000
+			const int START_TRACKID = 1000;
+			if(prevFrame.boundingBoxes[i].trackID < START_TRACKID){
+				prevFrame.boundingBoxes[i].trackID += START_TRACKID;
+			}
+			currFrame.boundingBoxes[j].trackID = prevFrame.boundingBoxes[i].trackID;
 		}
 
 	}

@@ -30,6 +30,7 @@ struct DebugFlag{
 	bool lidarpts_topview;
 	bool ttc_result;
 	bool original_lidarpnts;
+	bool lidarpts_topview_tracking;
 };
 
 
@@ -46,6 +47,7 @@ int main(int argc, const char *argv[])
 	debug_flag.lidarpts_topview = false;
 	debug_flag.ttc_result = false;
 	debug_flag.original_lidarpnts = false;
+	debug_flag.lidarpts_topview_tracking = true;
     /* INIT VARIABLES AND DATA STRUCTURES */
 
     // data location
@@ -161,11 +163,7 @@ int main(int argc, const char *argv[])
 
         // Visualize 3D objects
         bVis = debug_flag.lidarpts_topview ;
-//        if(bVis)
-//        {
-//            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
-           show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 8.0), cv::Size(800, 800), bVis);
-//        }
+        show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size2f(4.0, 8.5), cv::Size(800, 800), bVis);
         bVis = false;
 
         cout << "#4 : CLUSTER LIDAR POINT CLOUD done" << endl;
@@ -262,6 +260,10 @@ int main(int argc, const char *argv[])
 			{
 				show_bd_matching(bbBestMatches, *(dataBuffer.tail_prev()), *(dataBuffer.end()-1));
 			}
+			bVis = false;
+
+			bVis = debug_flag.lidarpts_topview_tracking ;
+			show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size2f(4.0, 8.5), cv::Size(800, 800), bVis);
 			bVis = false;
             //// EOF STUDENT ASSIGNMENT
 

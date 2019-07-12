@@ -91,6 +91,7 @@ void detectObjects(cv::Mat& img, std::vector<BoundingBox>& bBoxes, float confThr
         bBox.classID = classIds[*it];
         bBox.confidence = confidences[*it];
         bBox.boxID = (int)bBoxes.size(); // zero-based unique identifier for this bounding box
+        bBox.trackID = bBox.boxID;
         
         bBoxes.push_back(bBox);
     }
