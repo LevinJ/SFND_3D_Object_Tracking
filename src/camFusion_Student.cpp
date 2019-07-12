@@ -14,6 +14,61 @@
 
 using namespace std;
 
+template<typename T>
+static inline double Lerp(T v0, T v1, T t)
+{
+    return (1 - t)*v0 + t*v1;
+}
+
+template<typename T>
+static inline std::vector<T> Quantile(const std::vector<T>& inData, const std::vector<T>& probs)
+{
+    if (inData.empty())
+    {
+        return std::vector<T>();
+    }
+
+    if (1 == inData.size())
+    {
+        return std::vector<T>(1, inData[0]);
+    }
+
+    std::vector<T> data = inData;
+    std::sort(data.begin(), data.end());
+    std::vector<T> quantiles;
+
+    for (size_t i = 0; i < probs.size(); ++i)
+    {
+        T poi = Lerp<T>(-0.5, data.size() - 0.5, probs[i]);
+
+        size_t left = std::max(int64_t(std::floor(poi)), int64_t(0));
+        size_t right = std::min(int64_t(std::ceil(poi)), int64_t(data.size() - 1));
+
+        T datLeft = data.at(left);
+        T datRight = data.at(right);
+
+        T quantile = Lerp<T>(datLeft, datRight, poi - left);
+
+        quantiles.push_back(quantile);
+    }
+
+    return quantiles;
+}
+
+template<typename T>
+void remove_outerlier_IQR(std::vector<T>& inData){
+	auto quartiles = Quantile<double>(inData, { 0.25, 0.5, 0.75 });
+	auto IQR = quartiles[2] - quartiles[0];
+	auto median = quartiles[1];
+	std::vector<T> res;
+
+	for(auto &item: inData){
+		if(item > (median- 1.5*IQR) && item < (median + 1.5*IQR)){
+			res.push_back(item);
+		}
+	}
+	inData = std::move(res);
+}
 
 // Create groups of Lidar points whose projection into the camera falls into the same bounding box
 void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<LidarPoint> &lidarPoints, float shrinkFactor, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT)
@@ -209,9 +264,14 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 
 	    // compute camera-based TTC from distance ratios
 	    double ratio = 0;
-	    std::sort (distRatios.begin(), distRatios.end());
-		long medIndex = floor(distRatios.size() / 2.0);
-		ratio = distRatios.size() % 2 == 0 ? (distRatios[medIndex - 1] + distRatios[medIndex]) / 2.0 : distRatios[medIndex];
+
+	    //remove outlier via IQR
+	    remove_outerlier_IQR(distRatios);
+	    ratio = std::accumulate( distRatios.begin(), distRatios.end(), 0.0)/distRatios.size();
+
+//	    std::sort (distRatios.begin(), distRatios.end());
+//		long medIndex = floor(distRatios.size() / 2.0);
+//		ratio = distRatios.size() % 2 == 0 ? (distRatios[medIndex - 1] + distRatios[medIndex]) / 2.0 : distRatios[medIndex];
 
 	    double dT = 1 / frameRate;
 	    TTC = -dT / (1 - ratio);

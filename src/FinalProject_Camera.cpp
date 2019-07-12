@@ -43,11 +43,11 @@ int main(int argc, const char *argv[])
 	DebugFlag debug_flag;
 	debug_flag.object_detection = false;
 	debug_flag.box_match = false;
-	debug_flag.keyppoint_match = false;
+	debug_flag.keyppoint_match = true;
 	debug_flag.lidarpts_topview = false;
 	debug_flag.ttc_result = false;
 	debug_flag.original_lidarpnts = false;
-	debug_flag.lidarpts_topview_tracking = true;
+	debug_flag.lidarpts_topview_tracking = false;
     /* INIT VARIABLES AND DATA STRUCTURES */
 
     // data location
