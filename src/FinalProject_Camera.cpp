@@ -88,12 +88,13 @@ int main(int argc, const char *argv[])
 /* MAIN PROGRAM */
 int main_loop(string detectorType, string descriptorType, std::map<std::string, std::vector<float>> &res)
 {
+	//flags used to turn on/off various visualizations in the pipeline
 	DebugFlag debug_flag;
 	debug_flag.object_detection = false;
-	debug_flag.box_match = true;
-	debug_flag.keyppoint_match = true;
+	debug_flag.box_match = false;
+	debug_flag.keyppoint_match = false;
 	debug_flag.lidarpts_topview = false;
-	debug_flag.ttc_result = false;
+	debug_flag.ttc_result = true;
 	debug_flag.original_lidarpnts = false;
 	debug_flag.lidarpts_topview_tracking = false;
     /* INIT VARIABLES AND DATA STRUCTURES */
