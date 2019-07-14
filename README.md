@@ -2,7 +2,7 @@
 
 Course project for Udacity Sensor Fusion Engineer Nanodegree Program
 
-This project predicts the time to colission (TTC) with preceding car by utilzing raw data from both lidar and camera sensors. Below is the overall system architecture. Note that the yellow bounding box part regarding keypoint/descriptoer/matching has been implemented in [last feature tracking project](https://github.com/LevinJ/SFND_2D_Feature_Tracking).
+This project predicts the time to colission (TTC) with preceding car by utilizing raw data from both lidar and camera sensors. Below is the overall system architecture. Note that the yellow bounding box part regarding keypoint/descriptoer/matching has been implemented in [last feature tracking project](https://github.com/LevinJ/SFND_2D_Feature_Tracking).
 
 <img src="images/course_code_structure.png" width="779" height="414" />
 
@@ -40,9 +40,9 @@ Sensor noise is unavoidable, and we are getting some ghost point between the pre
 
 ## Associate Keypoint Correspondences with Bounding Boxes
 
-Before calculating the TTC of preceding car, we first obtains all the keypoints extracted in the bounding box of preceding car. This is implemented in `clusterKptMatchesWithROI` method. To be more robust to outliers, a shrinking boudning box is used to fitler out keypoints are not part of the preceding car. Also IQR is applied to euclidean distance ratio between current frame and previous to reduce outliers.
+Before calculating the TTC of preceding car, we first obtains all the keypoints extracted in the bounding box of preceding car. This is implemented in `clusterKptMatchesWithROI` method. To be more robust to outliers, a shrinking boudning box is used to fitler out keypoints that are not part of the preceding car. Also IQR is applied to euclidean distance ratio between current frame and previous to reduce outliers.
 
-Below is an examle result of associating kyepoints with bounding box
+Below is an examle result of associating kyepoints with bounding box. Note that this is keypoint association after bounding box shrinking, but before the IQR outlier fitlering.
 
 <img src="images/keypoint_inboundingbox.png" />
 
@@ -61,7 +61,7 @@ To remove those outliers caused by keypoint mismatch, we apply interquartile ran
 
 ##  Performance Evaluation 1 (lidar TTC)
 
-Lidar based TTC could be off, the main root cause could be that the closest point obtained may be a ghost point, may not be an actual point in the preceding car. Below are a few examples,
+Lidar based TTC could be off, the main root cause could be that the closest point obtained may be a ghost point. In another word, it may not be an actual point in the preceding car. Below are a few examples,
 
 <img src="images/lidar_outlier_4.png"  />
 
@@ -81,13 +81,14 @@ Using all combinations of detector/descriptor implemented in last project, a spr
 
 A few interesting points,
 
-1. "nan" TTC estimate
+1 "nan" TTC estimate 
 
 This happens as some combinations is not stable engough and is not able to find sufficient qualified keypoint match located in preceding car, as illustrated in below sample,
 
 <img src="images/insufficent_kpt.png"  />
 
-2. As there are no ground truth for TTC to compare the performance, we can't get an objective omparision among the detector/descriptor combinations. This feature is implemented in the `Performance_eval2` function in FinalProject_Camera.cpp file. Here are the keypoint matching sample for the three recommended combinations in last project.
+2 As there are no ground truth for TTC to compare the performance, we can't get an objective omparision among the detector/descriptor combinations.  
+3 This feature is implemented in the `Performance_eval2` function in FinalProject_Camera.cpp file. Here are the keypoint matching sample for the three recommended combinations in last project. 
 
 1) FAST-BRIEF
 <img src="images/fast_brief.png"  />
@@ -96,17 +97,17 @@ This happens as some combinations is not stable engough and is not able to find 
 3) FAST-SIFT
 <img src="images/fast_sift.png"  />
 
-Overall, I would say all the three combinations look very good, and ORB-ORB could be the best as it can hanlle orientation change bewteen subsequent image frames, and is probably able to do a better job in curved road.
+Overall, I would say all the three combinations look very good.  
 
 
 ## Refelction
 
-This project builds a pipeline to estimate time to collision with preceding car by useing both ldiar point and camera image, which is a very cool. a few takeaway,
+This project builds a pipeline to estimate time to collision with preceding car by useing both lidar point and camera image, which is a very cool. Below are a few takeaway,
 
 1. The idea of using keypoints/descriptor to track 3d bounding box is very appealing, and is expected to perform much more robost than distance based tracking method.
 2. As no ground truth TTC is provided, we are not able to get an thorough evaluation on the accuary of current pipeline.
 3. There are various hard coded parameters in the pipeline, the robutstness of the pipeline to unseen data/scenario remains to be tested.
-4. Using EKF to fuse ldiar and camera ttc shoudl be able to improve the robustness of the pipeline.
+4. Using EKF to fuse ldiar and camera ttc should be able to improve the robustness of the pipeline.
 
 
 
