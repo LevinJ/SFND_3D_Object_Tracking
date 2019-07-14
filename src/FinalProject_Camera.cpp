@@ -75,7 +75,7 @@ int main(int argc, const char *argv[])
 {
 //	Performance_eval2();
 //	return 0;
-	 string detectorType = "FAST";//SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
+	 string detectorType = "SIFT";//SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
 	 string descriptorType = "SIFT"; // BRIEF, ORB, FREAK, AKAZE, SIFT
 	 std::map<std::string, std::vector<float>> res;
 	 main_loop(detectorType, descriptorType,  res);
@@ -90,7 +90,7 @@ int main_loop(string detectorType, string descriptorType, std::map<std::string, 
 {
 	DebugFlag debug_flag;
 	debug_flag.object_detection = false;
-	debug_flag.box_match = false;
+	debug_flag.box_match = true;
 	debug_flag.keyppoint_match = true;
 	debug_flag.lidarpts_topview = false;
 	debug_flag.ttc_result = false;
