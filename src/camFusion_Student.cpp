@@ -265,13 +265,15 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 	    // compute camera-based TTC from distance ratios
 	    double ratio = 0;
 
+//		std::sort (distRatios.begin(), distRatios.end());
+//		long medIndex = floor(distRatios.size() / 2.0);
+//		ratio = distRatios.size() % 2 == 0 ? (distRatios[medIndex - 1] + distRatios[medIndex]) / 2.0 : distRatios[medIndex];
+
 	    //remove outlier via IQR
 	    remove_outerlier_IQR(distRatios);
 	    ratio = std::accumulate( distRatios.begin(), distRatios.end(), 0.0)/distRatios.size();
 
-//	    std::sort (distRatios.begin(), distRatios.end());
-//		long medIndex = floor(distRatios.size() / 2.0);
-//		ratio = distRatios.size() % 2 == 0 ? (distRatios[medIndex - 1] + distRatios[medIndex]) / 2.0 : distRatios[medIndex];
+
 
 	    double dT = 1 / frameRate;
 	    TTC = -dT / (1 - ratio);
