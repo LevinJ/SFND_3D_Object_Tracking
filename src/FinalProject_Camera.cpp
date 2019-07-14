@@ -33,17 +33,65 @@ struct DebugFlag{
 	bool lidarpts_topview_tracking;
 };
 
+int main_loop(string detectorType, string descriptorType, std::map<std::string, std::vector<float>> &res);
+
+void print_result(std::map<std::string, std::vector<float>> &res){
+	for(auto test : res ){
+		auto &detector_extraction_name = test.first;
+		auto &data = test.second;
+		ostringstream ss;
+		ss<< std::fixed << std::setprecision(1)<<detector_extraction_name<<", ";
+		for(auto &item : data){
+			ss<<item<<", ";
+		}
 
 
 
+		cout<< ss.str()<<endl;
+	}
+}
+void Performance_eval2()
+{
+	std::map<std::string, std::vector<float>> res;
+	for(auto detector:{"SHITOMASI", "HARRIS","FAST", "BRISK", "ORB", "AKAZE", "SIFT"}){
+		for(auto descriptor: {"BRIEF", "ORB", "FREAK", "SIFT"}){
+			if(string(detector).compare("SIFT") == 0 && string(descriptor).compare("ORB") == 0) continue;
+			main_loop(detector, descriptor, res);
+		}
+	}
+
+	for(auto detector:{"AKAZE"}){
+		for(auto descriptor: {"AKAZE"}){
+			main_loop(detector, descriptor, res);
+		}
+	}
+	print_result(res);
+
+
+}
 
 /* MAIN PROGRAM */
 int main(int argc, const char *argv[])
 {
+//	Performance_eval2();
+//	return 0;
+	 string detectorType = "FAST";//SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
+	 string descriptorType = "SIFT"; // BRIEF, ORB, FREAK, AKAZE, SIFT
+	 std::map<std::string, std::vector<float>> res;
+	 main_loop(detectorType, descriptorType,  res);
+	 print_result(res);
+
+}
+
+
+
+/* MAIN PROGRAM */
+int main_loop(string detectorType, string descriptorType, std::map<std::string, std::vector<float>> &res)
+{
 	DebugFlag debug_flag;
 	debug_flag.object_detection = false;
 	debug_flag.box_match = false;
-	debug_flag.keyppoint_match = false;
+	debug_flag.keyppoint_match = true;
 	debug_flag.lidarpts_topview = false;
 	debug_flag.ttc_result = false;
 	debug_flag.original_lidarpnts = false;
@@ -180,7 +228,7 @@ int main(int argc, const char *argv[])
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "SIFT";
+
 
         if (detectorType.compare("SHITOMASI") == 0)
 		{
@@ -217,7 +265,6 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        string descriptorType = "SIFT"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
         descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
 
         // push descriptors for current frame to end of data buffer
@@ -319,6 +366,8 @@ int main(int argc, const char *argv[])
                     bVis = false;
                     //// EOF STUDENT ASSIGNMENT
                     cout<<"TTC Lidar :"<<ttcLidar<<", TTC Camera : "<<ttcCamera<<endl;
+                    string detector_extraction_name = detectorType + "_"+ descriptorType;
+                    res[detector_extraction_name].push_back(ttcCamera);
                     bVis = debug_flag.ttc_result;
                     if (bVis)
                     {
